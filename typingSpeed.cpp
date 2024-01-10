@@ -16,6 +16,17 @@ using namespace std;
 #define cc "\033[1;36m"
 #define cn "\033[1;0m"
 
+class result{
+    int wrongs, speed;
+    float accuracy;
+    public:
+        result(int w,int s, float a){
+                wrongs = w;
+                speed = s;
+                accuracy = a;
+            }
+};
+
 void randomColor(){
     int ind = rand()%7;
     switch (ind)
@@ -46,11 +57,41 @@ void randomColor(){
         break;
     }
 }
+int countLines(ifstream &f){
+    string l;
+    int lCnt=0;
+    while(getline(f,l))
+        lCnt++;
+    return lCnt;
+}
+int chooseLvl(){
+    int lvl=0;
+    cout<<endl<<"1. Easy"<<endl<<"2. Medium"<<endl<<"3. Hard"<<endl<<cy<<"Choose the difficulty Level: ";
+    cin>>lvl;
+    cout<<cn;
+    return lvl-1;
+}
+bool continueGame(){
+    int i;
+    cout<<endl<<"1. Yes"<<endl<<"2. No"<<endl<<cy<<"Try one time more? ";
+    cin>>i;
+    cout<<cn;
+    if(i==1)
+        return true;
+    return false;
+}
 int main(){
-    ifstream myFile("paragraph.txt");
-    string line,content,lines[7];
+    string levels[3] = {"easy.txt", "medium.txt", "hard.txt"};
+    bool play;
+    do{
+    int lvl = chooseLvl();
+    ifstream myFile(levels[lvl]);
+    int n = countLines(myFile);
+    string line,content,lines[n];
     srand(time(0));
     int i=0;
+    myFile.clear();
+    myFile.seekg(0);
     while(getline(myFile,line))
         lines[i++].append(line);
     cout<<endl<<endl;
@@ -58,19 +99,21 @@ int main(){
     time_t st = time(0);
     char c;
     string text;
-    int wrong=0,removed=0,r=0,wWords = 0,wrongs=0,tLen=0;
+    int wrong=0,removed=0,r,wWords = 0,wrongs=0,tLen=0;
+    r = rand()%(n-3);
     while(t<30){
         time_t ct = time(0);
         t = (ct-st);
         i=0;
-        wrong=0;
         system("cls");
         if(text.length()>content.length()){
+            tLen+=text.length();
             r++;
             text = text.substr(0, 0);
             cursor=0;
             wrongs+=wrong;
         }
+        wrong=0;
         content = content.substr(0, 0);
         content.append(lines[r]);
         while(i<content.length()){
@@ -101,11 +144,16 @@ int main(){
         cursor++;
     }
         wrongs+=wrong;
-        for(int i=0;i<r;i++)
-            tLen+=lines[i].length();
         tLen+=text.length();
         float gSpd = tLen/5.0;
         float accuracy = round((1 - (float) (wrongs+removed)/tLen)*100);
-        int speed = 2*(gSpd - wrongs/5);
+        int speed = 2*(gSpd - wrongs/5.0);
         cout<<endl<<"Wrong: "<<wrongs<<endl<<"Accuracy: "<<accuracy<<"%"<<endl<<"Typing Speed = "<<speed<<"wpm";
+        play = continueGame();
+        result res(wrongs,speed,accuracy);
+        ofstream file("results.txt");
+        file << res;
+        
+    }while(play);
+    cout<<endl<<endl<<cg<<"THANK YOU!"<<cn;
 }
