@@ -17,51 +17,30 @@ using namespace std;
 #define cn "\033[1;0m"
 
 class result{
-    int wrongs, speed;
-    float accuracy;
     public:
-        result(int w,int s, float a){
+        int wrongs, speed;
+        float accuracy;
+        char timeStmp[60];
+        void setResult(int w,int s, float a){
                 wrongs = w;
                 speed = s;
                 accuracy = a;
+                time_t t = time(NULL);
+                struct tm *aT = localtime(&t);
+                strftime(timeStmp,60,"%d %b - %I:%M%p",aT);
             }
+        void updateFile(ofstream &f){
+            
+            f<<this->timeStmp<<",   "<<this->wrongs<<",          "<<this->speed<<",             "<<this->accuracy<<endl;
+        }
 };
-
-void randomColor(){
-    int ind = rand()%7;
-    switch (ind)
-    {
-    case 0:
-        cout<<cg;
-        break;
-    case 1:
-        cout<<cy;
-        break;
-    case 2:
-        cout<<cr;
-        break;
-    case 3:
-        cout<<cb;
-        break;
-    case 4:
-        cout<<cm;
-        break;
-    case 5:
-        cout<<cc;
-        break;
-    case 6:
-        cout<<cn;
-        break;
-    
-    default:
-        break;
-    }
-}
 int countLines(ifstream &f){
     string l;
     int lCnt=0;
     while(getline(f,l))
         lCnt++;
+    f.clear();
+    f.seekg(0);
     return lCnt;
 }
 int chooseLvl(){
@@ -80,18 +59,51 @@ bool continueGame(){
         return true;
     return false;
 }
+void displayLeaderboard(result res){
+    ifstream rfile("results.txt");
+    int n = countLines(rfile)-1;
+    rfile.close();
+    result results[n];
+    FILE *p = fopen("results.txt", "r");
+    char st[100];
+    fgets(st,100,p);
+    for(int i=0;i<n;i++)
+        fscanf(p,"%60[^,],   %d,          %d,             %f\n",results[i].timeStmp,&results[i].wrongs,&results[i].speed,&results[i].accuracy);
+    fclose(p);
+    int sorted=1;
+    while(sorted){
+        sorted=0;
+        for(int i=0;i<n-1;i++)
+            if(results[i].speed<results[i+1].speed){
+                result temp = results[i];
+                results[i] = results[i+1];
+                results[i+1] = temp;
+                sorted=1;
+            }
+        }
+    cout<<endl<<"\t\t"<<cy<<"LEADERBOARD"<<endl;
+    cout<<"SN   Timestamp         Wrongs      Speed(wpm)      Accuracy"<<endl<<cn;
+    for(int i=0;(i<n && i<10);i++){
+        string ts(results[i].timeStmp),ts2(res.timeStmp);
+        if(ts==ts2)
+            cout<<cg;
+        cout<<i+1<<"    "<<results[i].timeStmp<<"    "<<results[i].wrongs<<"            "<<results[i].speed<<"              "<<results[i].accuracy<<endl<<cn;
+    }
+}
 int main(){
     string levels[3] = {"easy.txt", "medium.txt", "hard.txt"};
     bool play;
     do{
     int lvl = chooseLvl();
     ifstream myFile(levels[lvl]);
+    if(!myFile.is_open()){
+        cerr<<"Error: cannot open file";
+        return 1;
+    }
     int n = countLines(myFile);
     string line,content,lines[n];
     srand(time(0));
     int i=0;
-    myFile.clear();
-    myFile.seekg(0);
     while(getline(myFile,line))
         lines[i++].append(line);
     cout<<endl<<endl;
@@ -99,7 +111,7 @@ int main(){
     time_t st = time(0);
     char c;
     string text;
-    int wrong=0,removed=0,r,wWords = 0,wrongs=0,tLen=0;
+    int wrong=0,removed=0,r,wrongs=0,tLen=0;
     r = rand()%(n-3);
     while(t<30){
         time_t ct = time(0);
@@ -128,7 +140,7 @@ int main(){
                 cout<<cn;
             if(i==cursor)
                 cout<<cy<<"|"<<cn;
-            cout<<content.at(i++);
+            cout<<content.at(i++)<<cn;
         }
         c = _getch();
         if(c==8){
@@ -149,11 +161,22 @@ int main(){
         float accuracy = round((1 - (float) (wrongs+removed)/tLen)*100);
         int speed = 2*(gSpd - wrongs/5.0);
         cout<<endl<<"Wrong: "<<wrongs<<endl<<"Accuracy: "<<accuracy<<"%"<<endl<<"Typing Speed = "<<speed<<"wpm";
+        result res;
+        res.setResult(wrongs,speed,accuracy);
+        ifstream file;
+        file.open("results.txt");
+        ofstream rfile;
+        if(!file){
+            rfile.open("results.txt",ios::app);
+            rfile<<"Timestamp         Wrongs      Speed(wpm)      Accuracy"<<endl;
+        }
+        else
+            rfile.open("results.txt",ios::app);
+        file.close();
+        res.updateFile(rfile);
+        rfile.close();
+        displayLeaderboard(res);
         play = continueGame();
-        result res(wrongs,speed,accuracy);
-        ofstream file("results.txt");
-        file << res;
-        
     }while(play);
     cout<<endl<<endl<<cg<<"THANK YOU!"<<cn;
 }
