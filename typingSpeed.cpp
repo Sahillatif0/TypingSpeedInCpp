@@ -90,15 +90,10 @@ void displayLeaderboard(result res){
         cout<<i+1<<"    "<<results[i].timeStmp<<"    "<<results[i].wrongs<<"            "<<results[i].speed<<"              "<<results[i].accuracy<<endl<<cn;
     }
 }
-int main(){
-    string levels[3] = {"easy.txt", "medium.txt", "hard.txt"};
-    bool play;
-    do{
-    int lvl = chooseLvl();
-    ifstream myFile(levels[lvl]);
+void startTyping(ifstream &myFile){
     if(!myFile.is_open()){
-        cerr<<"Error: cannot open file";
-        return 1;
+        cerr<<"Error: cannot open file"<<endl;
+        return;
     }
     int n = countLines(myFile);
     string line,content,lines[n];
@@ -155,27 +150,35 @@ int main(){
             text+=c;
         cursor++;
     }
-        wrongs+=wrong;
-        tLen+=text.length();
-        float gSpd = tLen/5.0;
-        float accuracy = round((1 - (float) (wrongs+removed)/tLen)*100);
-        int speed = 2*(gSpd - wrongs/5.0);
-        cout<<endl<<"Wrong: "<<wrongs<<endl<<"Accuracy: "<<accuracy<<"%"<<endl<<"Typing Speed = "<<speed<<"wpm";
-        result res;
-        res.setResult(wrongs,speed,accuracy);
-        ifstream file;
-        file.open("results.txt");
-        ofstream rfile;
-        if(!file){
-            rfile.open("results.txt",ios::app);
-            rfile<<"Timestamp         Wrongs      Speed(wpm)      Accuracy"<<endl;
-        }
-        else
-            rfile.open("results.txt",ios::app);
-        file.close();
-        res.updateFile(rfile);
-        rfile.close();
-        displayLeaderboard(res);
+    wrongs+=wrong;
+    tLen+=text.length();
+    float gSpd = tLen/5.0;
+    float accuracy = round((1 - (float) (wrongs+removed)/tLen)*100);
+    int speed = 2*(gSpd - wrongs/5.0);
+    cout<<endl<<"Wrong: "<<wrongs<<endl<<"Accuracy: "<<accuracy<<"%"<<endl<<"Typing Speed = "<<speed<<"wpm";
+    result res;
+    res.setResult(wrongs,speed,accuracy);
+    ifstream file;
+    file.open("results.txt");
+    ofstream rfile;
+    if(!file){
+        rfile.open("results.txt",ios::app);
+        rfile<<"Timestamp         Wrongs      Speed(wpm)      Accuracy"<<endl;
+    }
+    else
+        rfile.open("results.txt",ios::app);
+    file.close();
+    res.updateFile(rfile);
+    rfile.close();
+    displayLeaderboard(res);
+}
+int main(){
+    string levels[3] = {"easy.txt", "medium.txt", "hard.txt"};
+    bool play;
+    do{
+        int lvl = chooseLvl();
+        ifstream myFile(levels[lvl]);
+        startTyping(myFile);
         play = continueGame();
     }while(play);
     cout<<endl<<endl<<cg<<"THANK YOU!"<<cn;
